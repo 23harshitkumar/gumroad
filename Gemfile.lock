@@ -15,6 +15,14 @@ GIT
       omniauth (~> 2.0)
       omniauth-oauth2 (~> 1.4)
 
+GIT
+  remote: https://github.com/xrav3nz/rack-mini-profiler.git
+  revision: 487e5fcee8af046ba544f5b6271a6619a150777f
+  branch: kyle/flamegraph-nonce
+  specs:
+    rack-mini-profiler (4.0.1)
+      rack (>= 1.2.0)
+
 GEM
   remote: https://gems.contribsys.com/
   specs:
@@ -725,8 +733,6 @@ GEM
       rack (>= 1.0, < 4)
     rack-cors (2.0.2)
       rack (>= 2.0.0)
-    rack-mini-profiler (4.0.0)
-      rack (>= 1.2.0)
     rack-oauth2 (1.21.3)
       activesupport
       attr_required
@@ -1203,7 +1209,7 @@ DEPENDENCIES
   pundit (~> 2.3)
   rack-attack (~> 6.6)
   rack-cors (~> 2.0)
-  rack-mini-profiler (~> 4.0)
+  rack-mini-profiler!
   rack-ssl (~> 1.4)
   rack-timeout (~> 0.6)
   rack-utf8_sanitizer (~> 1.8)
