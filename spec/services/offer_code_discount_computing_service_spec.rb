@@ -3,12 +3,13 @@
 require "spec_helper"
 
 describe OfferCodeDiscountComputingService do
-  let(:product) { create(:product, user: create(:user), price_cents: 2000, price_currency_type: "usd") }
-  let(:product2) { create(:product, user: product.user, price_cents: 2000, price_currency_type: "usd") }
-  let(:universal_offer_code) { create(:universal_offer_code, user: product.user, amount_percentage: 100, amount_cents: nil, currency_type: product.price_currency_type) }
-  let(:offer_code) { create(:offer_code, products: [product], amount_percentage: 100, amount_cents: nil, currency_type: product.price_currency_type) }
-  let(:zero_percent_discount_code) { create(:offer_code, products: [product], amount_percentage: 0, amount_cents: nil, currency_type: product.price_currency_type) }
-  let(:zero_cents_discount_code) { create(:offer_code, products: [product], amount_percentage: nil, amount_cents: 0, currency_type: product.price_currency_type) }
+  let(:seller) { create(:user) }
+  let(:product) { create(:product, user: seller, price_cents: 2000, price_currency_type: "usd") }
+  let(:product2) { create(:product, user: seller, price_cents: 2000, price_currency_type: "usd") }
+  let(:universal_offer_code) { create(:universal_offer_code, user: seller, amount_percentage: 100, amount_cents: nil, currency_type: product.price_currency_type) }
+  let(:offer_code) { create(:offer_code, user: seller, products: [product], amount_percentage: 100, amount_cents: nil, currency_type: product.price_currency_type) }
+  let(:zero_percent_discount_code) { create(:offer_code, user: seller, products: [product], amount_percentage: 0, amount_cents: nil, currency_type: product.price_currency_type) }
+  let(:zero_cents_discount_code) { create(:offer_code, user: seller, products: [product], amount_percentage: nil, amount_cents: 0, currency_type: product.price_currency_type) }
   let(:products_data) do
     {
       product.id => { quantity: "3", permalink: product.unique_permalink },
