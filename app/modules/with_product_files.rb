@@ -52,6 +52,7 @@ module WithProductFiles
         file_params.delete(:folder_id) if file_params[:folder_id].nil? && !(product_file.folder&.alive?)
         # TODO(product_edit_react) remove fallback
         subtitle_files_params = file_params.delete(:subtitle_files) || file_params.delete(:subtitles)&.values
+        chapter_files_params = file_params.delete(:chapter_files)
         thumbnail_signed_id = file_params.delete(:thumbnail)&.dig(:signed_id) || file_params.delete(:thumbnail_signed_id)
         product_file.update!(file_params)
 
@@ -62,6 +63,7 @@ module WithProductFiles
           rich_content_params.each { update_rich_content_file_id(_1, external_id, product_file.external_id) }
         end
         save_subtitle_files(product_file, subtitle_files_params)
+        save_chapter_files(product_file, chapter_files_params)
         product_file.thumbnail.attach thumbnail_signed_id if thumbnail_signed_id.present?
       rescue ActiveRecord::RecordInvalid => e
         link&.errors&.add(:base, "#{file_params[:url]} is not a valid URL.") if e.message.include?("#{file_params[:url]} is not a valid URL.")
@@ -229,6 +231,13 @@ module WithProductFiles
 
     def save_subtitle_files(product_file, subtitle_files_params)
       product_file.save_subtitle_files!(subtitle_files_params || {})
+    rescue ActiveRecord::RecordInvalid => e
+      errors.add(:base, e.message)
+      raise e
+    end
+
+    def save_chapter_files(product_file, chapter_files_params)
+      product_file.save_chapter_files!(chapter_files_params || {})
     rescue ActiveRecord::RecordInvalid => e
       errors.add(:base, e.message)
       raise e

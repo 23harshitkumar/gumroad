@@ -220,6 +220,8 @@ const FileEmbedNodeView = ({ node, editor, getPos, updateAttributes }: NodeViewP
 
   const removeSubtitle = (url: string) =>
     updateFile({ subtitle_files: file.subtitle_files.filter((subtitle) => subtitle.url !== url) });
+  const removeChapter = (url: string) =>
+    updateFile({ chapter_files: file.chapter_files.filter((chapter) => chapter.url !== url) });
   const uploadSubtitles = (files: File[]) => {
     for (const subtitleFile of files) {
       const mimeType = getMimeType(subtitleFile.name);
@@ -252,6 +254,49 @@ const FileEmbedNodeView = ({ node, editor, getPos, updateAttributes }: NodeViewP
         },
         onProgress: (progress) => {
           subtitleEntry.status = { type: "unsaved", uploadStatus: { type: "uploading", progress } };
+          updateFile({});
+        },
+      });
+
+      if (typeof status === "string") {
+        // status contains error string if any, otherwise index of file in array
+        showAlert(status, "error");
+      }
+    }
+  };
+
+  const uploadChapters = (files: File[]) => {
+    for (const chapterFile of files) {
+      const mimeType = getMimeType(chapterFile.name);
+      const extension = FileUtils.getFileExtension(chapterFile.name).toUpperCase();
+      const fileName = FileUtils.getFileNameWithoutExtension(chapterFile.name);
+      const fileSize = chapterFile.size;
+      const id = FileUtils.generateGuid();
+      const { s3key, fileUrl } = s3UploadConfig.generateS3KeyForUpload(id, chapterFile.name);
+
+      const chapterEntry: SubtitleFile = {
+        file_name: fileName,
+        extension,
+        language: "English",
+        file_size: fileSize,
+        url: fileUrl,
+        signed_url: URL.createObjectURL(chapterFile),
+        status: { type: "unsaved", uploadStatus: { type: "uploading", progress: { percent: 0, bitrate: 0 } } },
+      };
+
+      updateFile({ chapter_files: [...file.chapter_files, chapterEntry] });
+
+      const status = uploader.scheduleUpload({
+        cancellationKey: `chapters_for_${file.id}__${chapterEntry.url}`,
+        name: s3key,
+        file: chapterFile,
+        mimeType,
+        onComplete: () => {
+          chapterEntry.status = { type: "unsaved", uploadStatus: { type: "uploaded" } };
+          updateFile({});
+        },
+        onProgress: (progress) => {
+          chapterEntry.status = { type: "unsaved", uploadStatus: { type: "uploading", progress } };
           updateFile({});
         },
       });
@@ -613,6 +658,29 @@ const FileEmbedNodeView = ({ node, editor, getPos, updateAttributes }: NodeViewP
                       }
                     />
                     <SubtitleUploadBox onUploadFiles={uploadSubtitles} />
+                  </div>
+                </fieldset>
+                <fieldset>
+                  <legend>Chapters</legend>
+                  <div className="paragraphs">
+                    <SubtitleList
+                      subtitleFiles={file.chapter_files}
+                      onRemoveSubtitle={removeChapter}
+                      onCancelSubtitleUpload={removeChapter}
+                      onChangeSubtitleLanguage={(url, language) =>
+                        updateFile({
+                          chapter_files: file.chapter_files.map((chapter) =>
+                            chapter.url === url ? { ...chapter, language } : chapter,
+                          ),
+                        })
+                      }
+                    />
+                    <SubtitleUploadBox
+                      onUploadFiles={uploadChapters}
+                      acceptTypes=".vtt"
+                      buttonText="Add chapters"
+                      validationFn={(fileName) => fileName.toLowerCase().endsWith('.vtt')}
+                    />
                   </div>
                 </fieldset>
                 <label>
