@@ -158,8 +158,7 @@ class OfferCode < ApplicationRecord
   end
 
   def inactive?
-    now = Time.current
-    (valid_at.present? && now < valid_at) || (expires_at.present? && now > expires_at)
+    !!(valid_at&.future? || expires_at&.past?)
   end
 
   def discount
