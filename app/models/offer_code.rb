@@ -157,6 +157,14 @@ class OfferCode < ApplicationRecord
     end
   end
 
+  def applicable?(link)
+    if universal?
+      currency_type.present? ? link.price_currency_type == currency_type : true
+    else
+      products.include?(link)
+    end
+  end
+
   def inactive?
     !!(valid_at&.future? || expires_at&.past?)
   end
