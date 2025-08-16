@@ -738,4 +738,65 @@ describe WithProductFiles do
       expect(TranscodeVideoForStreamingWorker).to have_enqueued_sidekiq_job(files[6].id, "ProductFile").at((6 * 5).minutes.from_now)
     end
   end
+
+  describe "#save_chapter_files" do
+    it "saves chapter files when provided" do
+      product = create(:product)
+      product_file = create(:product_file, link: product)
+
+      chapter_data = [
+        { "language" => "English", "url" => "english.vtt" },
+        { "language" => "Français", "url" => "french.vtt" }
+      ]
+
+      expect do
+        product.save_chapter_files(product_file.external_id, chapter_data)
+      end.to change { ChapterFile.count }.by(2)
+
+      product_file.reload
+      expect(product_file.chapter_files.count).to eq(2)
+      expect(product_file.chapter_files.map(&:language)).to match_array(["English", "Français"])
+      expect(product_file.chapter_files.map(&:url)).to match_array(["english.vtt", "french.vtt"])
+    end
+
+    it "handles empty chapter files data" do
+      product = create(:product)
+      product_file = create(:product_file, link: product)
+
+      expect do
+        product.save_chapter_files(product_file.external_id, [])
+      end.not_to change { ChapterFile.count }
+    end
+
+    it "updates existing chapter files" do
+      product = create(:product)
+      product_file = create(:product_file, link: product)
+      existing_chapter = create(:chapter_file, product_file: product_file, language: "English", url: "old_english.vtt")
+
+      chapter_data = [
+        { "language" => "English", "url" => "new_english.vtt" },
+        { "language" => "Español", "url" => "spanish.vtt" }
+      ]
+
+      expect do
+        product.save_chapter_files(product_file.external_id, chapter_data)
+      end.to change { ChapterFile.count }.by(1) # Only one new file added
+
+      product_file.reload
+      expect(product_file.chapter_files.alive.count).to eq(2)
+      expect(existing_chapter.reload.deleted_at).to be_present # Old chapter should be marked deleted
+    end
+
+    it "does nothing when product file is not found" do
+      product = create(:product)
+
+      chapter_data = [
+        { "language" => "English", "url" => "english.vtt" }
+      ]
+
+      expect do
+        product.save_chapter_files("nonexistent-id", chapter_data)
+      end.not_to change { ChapterFile.count }
+    end
+  end
 end

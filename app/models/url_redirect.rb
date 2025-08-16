@@ -216,7 +216,7 @@ class UrlRedirect < ApplicationRecord
       video_data = { sources: [hls_playlist_or_smil_xml_path(product_file), video_url] }
       video_data[:guid] = guid
       video_data[:title] = product_file.name_displayable
-      video_data[:tracks] = product_file.subtitle_files_urls
+      video_data[:tracks] = product_file.subtitle_files_urls + product_file.chapter_files_urls
       video_data[:external_id] = product_file.try(:external_id)
       video_data[:latest_media_location] = product_file.latest_media_location_for(purchase)
       video_data[:content_length] = product_file.content_length

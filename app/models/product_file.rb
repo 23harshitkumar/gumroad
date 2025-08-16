@@ -17,6 +17,8 @@ class ProductFile < ApplicationRecord
   has_many :alive_stamped_pdfs, -> { alive }, class_name: "StampedPdf"
   has_many :subtitle_files
   has_many :alive_subtitle_files, -> { alive }, class_name: "SubtitleFile"
+  has_many :chapter_files
+  has_many :alive_chapter_files, -> { alive }, class_name: "ChapterFile"
   has_many :media_locations
   has_one :dropbox_file
   has_and_belongs_to_many :base_variants
@@ -95,6 +97,18 @@ class ProductFile < ApplicationRecord
       id: external_id,
       attached_product_name: link.try(:name),
       subtitle_files: alive_subtitle_files.map do |file|
+        {
+          url: file.url,
+          file_name: file.s3_display_name,
+          extension: file.s3_display_extension,
+          language: file.language,
+          file_size: file.size,
+          size: file.size_displayable,
+          signed_url: signed_download_url_for_s3_key_and_filename(file.s3_key, file.s3_filename, is_video: true),
+          status: { type: "saved" },
+        }
+      end,
+      chapter_files: alive_chapter_files.map do |file|
         {
           url: file.url,
           file_name: file.s3_display_name,
@@ -186,8 +200,28 @@ class ProductFile < ApplicationRecord
     files.each { subtitle_files.create!(_1) }
   end
 
+  def save_chapter_files!(files)
+    chapter_files.alive.each do |file|
+      found = files.extract! { _1[:url] == file.url }.first
+      if found
+        file.language = found[:language]
+      else
+        file.mark_deleted
+      end
+      file.save!
+    end
+    files.each { chapter_files.create!(_1) }
+  end
+
   def delete_all_subtitle_files!
     subtitle_files.alive.each do |file|
+      file.mark_deleted
+      file.save!
+    end
+  end
+
+  def delete_all_chapter_files!
+    chapter_files.alive.each do |file|
       file.mark_deleted
       file.save!
     end
@@ -196,6 +230,7 @@ class ProductFile < ApplicationRecord
   def delete!
     mark_deleted!
     delete_all_subtitle_files!
+    delete_all_chapter_files!
   end
 
   def display_extension
@@ -226,6 +261,16 @@ class ProductFile < ApplicationRecord
         file: signed_download_url_for_s3_key_and_filename(file.s3_key, file.s3_filename, is_video: true),
         label: file.language,
         kind: "captions"
+      }
+    end
+  end
+
+  def chapter_files_urls
+    chapter_files.alive.map do |file|
+      {
+        file: signed_download_url_for_s3_key_and_filename(file.s3_key, file.s3_filename, is_video: true),
+        label: file.language,
+        kind: "chapters"
       }
     end
   end

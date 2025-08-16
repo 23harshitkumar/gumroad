@@ -236,6 +236,79 @@ describe ProductFile do
       expect(product_file.subtitle_files.alive.length).to eq 2
     end
 
+    it "saves chapter files correctly" do
+      product_file = create(:product_file)
+      chapter_data = [
+        {
+          "language" => "English",
+          "url" => "english.vtt"
+        },
+        {
+          "language" => "Français",
+          "url" => "french.vtt"
+        },
+        {
+          "language" => "Español",
+          "url" => "spanish.vtt"
+        }
+      ]
+      product_file.save_chapter_files!(chapter_data)
+      product_file.chapter_files.each do |file|
+        expect(file.language).to eq chapter_data.find { _1["url"] == file.url }["language"]
+      end
+    end
+
+    it "deletes all chapter files correctly" do
+      product_file = create(:product_file)
+      chapter_file = create(:chapter_file, product_file:)
+      product_file.chapter_files.append(chapter_file)
+      product_file.delete_all_chapter_files!
+      expect(product_file.chapter_files.alive.length).to eq 0
+    end
+
+    it "handles edits to chapter files correctly" do
+      product_file = create(:product_file)
+      chapter_file = create(:chapter_file, product_file:)
+      product_file.chapter_files.append(chapter_file)
+      chapter_file = create(:chapter_file, url: "french.vtt", product_file:)
+      product_file.chapter_files.append(chapter_file)
+      chapter_data = [
+        {
+          "language" => "Français",
+          "url" => "french.vtt"
+        },
+        {
+          "language" => "Español",
+          "url" => "spanish.vtt"
+        }
+      ]
+      product_file.save_chapter_files!(chapter_data)
+      product_file.chapter_files.alive.each do |file|
+        expect(file.language).to eq chapter_data.find { _1["url"] == file.url }["language"]
+      end
+      expect(product_file.chapter_files.alive.length).to eq 2
+    end
+
+    it "returns chapter files URLs for JW Player" do
+      product_file = create(:product_file)
+      chapter_file1 = create(:chapter_file, product_file:, language: "English", url: "english.vtt")
+      chapter_file2 = create(:chapter_file, product_file:, language: "Français", url: "french.vtt")
+      product_file.chapter_files.append(chapter_file1)
+      product_file.chapter_files.append(chapter_file2)
+
+      urls = product_file.chapter_files_urls
+      expect(urls).to be_an(Array)
+      expect(urls.length).to eq(2)
+
+      english_chapter = urls.find { |chapter| chapter[:label] == "English" }
+      french_chapter = urls.find { |chapter| chapter[:label] == "Français" }
+
+      expect(english_chapter).to include(kind: "chapters", label: "English")
+      expect(french_chapter).to include(kind: "chapters", label: "Français")
+      expect(english_chapter[:file]).to include("english.vtt")
+      expect(french_chapter[:file]).to include("french.vtt")
+    end
+
     describe "invalid file urls" do
       it "does not create files with invalid urls" do
         invalid_product_file = build(:product_file, url: "undefined")

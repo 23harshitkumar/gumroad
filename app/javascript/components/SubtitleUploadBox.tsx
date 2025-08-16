@@ -4,17 +4,28 @@ import FileUtils from "$app/utils/file";
 
 import { showAlert } from "$app/components/server-components/Alert";
 
-type UploadBoxProps = { onUploadFiles: (domFiles: File[]) => void };
+type UploadBoxProps = {
+  onUploadFiles: (domFiles: File[]) => void;
+  acceptTypes?: string;
+  buttonText?: string;
+  validationFn?: (fileName: string) => boolean;
+};
 
 const acceptedSubtitleExtensions = FileUtils.getAllowedSubtitleExtensions()
   .map((ext) => `.${ext}`)
   .join(",");
 
-export const SubtitleUploadBox = ({ onUploadFiles }: UploadBoxProps) => {
+export const SubtitleUploadBox = ({
+  onUploadFiles,
+  acceptTypes,
+  buttonText = "Add subtitles",
+  validationFn
+}: UploadBoxProps) => {
   const filePickerOnChange = (fileInput: HTMLInputElement) => {
     if (!fileInput.files) return;
     const files = [...fileInput.files];
-    if (files.some((file) => !FileUtils.isFileNameASubtitle(file.name))) {
+    const validator = validationFn || ((fileName: string) => FileUtils.isFileNameASubtitle(fileName));
+    if (files.some((file) => !validator(file.name))) {
       showAlert("Invalid file type.", "error");
       return;
     }
@@ -28,12 +39,12 @@ export const SubtitleUploadBox = ({ onUploadFiles }: UploadBoxProps) => {
         className="subtitles-file"
         type="file"
         name="file"
-        accept={acceptedSubtitleExtensions}
+        accept={acceptTypes || acceptedSubtitleExtensions}
         tabIndex={-1}
         multiple
         onChange={(e) => filePickerOnChange(e.target)}
       />
-      Add subtitles
+      {buttonText}
     </label>
   );
 };

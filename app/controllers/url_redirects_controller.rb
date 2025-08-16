@@ -117,6 +117,14 @@ class UrlRedirectsController < ApplicationController
     redirect_to @url_redirect.signed_video_url(subtitle_file), allow_other_host: true
   end
 
+  def download_chapter_file
+    (product_file = @url_redirect.product_file(params[:product_file_id])) || e404
+    e404 unless @url_redirect.is_file_downloadable?(product_file)
+    (chapter_file = product_file.chapter_files.alive.find_by_external_id(params[:chapter_file_id])) || e404
+
+    redirect_to @url_redirect.signed_video_url(chapter_file), allow_other_host: true
+  end
+
   def smil
     @product_file = @url_redirect.product_file(params[:product_file_id])
     e404 if @product_file.blank?
