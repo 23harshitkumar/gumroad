@@ -116,18 +116,19 @@ class OfferCodeDiscountComputingService
       end
     end
 
+    PRODUCT_LEVEL_INELIGIBILITIES_BY_DISPLAY_PRIORITY = [
+      :unmet_minimum_purchase_quantity,
+      :insufficient_times_of_use,
+      :sold_out,
+    ]
+
     def error_code
       return :invalid_offer if offer_codes.blank?
       return :inactive if offer_codes.all?(&:inactive?)
 
-      if @product_level_ineligibilities.blank?
-        nil
-      elsif @product_level_ineligibilities[:unmet_minimum_purchase_quantity]
-        :insufficient_quantity
-      elsif @product_level_ineligibilities[:insufficient_times_of_use]
-        :exceeding_quantity
-      elsif @product_level_ineligibilities[:sold_out]
-        :sold_out
-      end
+      return nil if @product_level_ineligibilities.blank?
+
+      PRODUCT_LEVEL_INELIGIBILITIES_BY_DISPLAY_PRIORITY
+        .find { @product_level_ineligibilities[it] }
     end
 end

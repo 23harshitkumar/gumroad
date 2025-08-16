@@ -175,7 +175,7 @@ describe OfferCodeDiscountComputingService do
     result = OfferCodeDiscountComputingService.new(offer_code.code, products_data).process
 
     expect(result[:products_data]).to eq({})
-    expect(result[:error_code]).to eq(:exceeding_quantity)
+    expect(result[:error_code]).to eq(:insufficient_times_of_use)
   end
 
   context "when offer code is not yet valid" do
@@ -212,7 +212,7 @@ describe OfferCodeDiscountComputingService do
     it "returns insufficient quantity error code" do
       result = OfferCodeDiscountComputingService.new(offer_code.code, products_data).process
 
-      expect(result[:error_code]).to eq(:insufficient_quantity)
+      expect(result[:error_code]).to eq(:unmet_minimum_purchase_quantity)
       expect(result[:products_data]).to eq({})
     end
   end
